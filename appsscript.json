@@ -1,0 +1,14 @@
+{
+  "timeZone": "Asia/Bangkok",
+  "dependencies": {
+    "libraries": [{
+      "userSymbol": "SM",
+      "libraryId": "1tFvQ8Cu5Ll8AtAtBznSUtXfZAMLtg3jgtmCwW9SypsvlV8y5XuGxjI9X",
+      "version": "8"
+    }]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "sheets": {
+  }
+}
