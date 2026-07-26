@@ -1,8 +1,43 @@
 /**
  * THIẾT KẾ HTML CSS V3 - GOOGLE APPS SCRIPT
+ * Chuẩn hóa đọc Metadata N:O & Xử lý theo mảng bôi đen
  */
 
+// --- 1. LẤY DANH SÁCH TÊN SHEET TỪ VÙNG BÔI ĐEN (AN TOÀN 100%) ---
+function getSelectedSheetNames() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const range = ss.getActiveRange();
+  
+  if (!range) {
+    throw new Error("Vui lòng bôi đen các ô chứa tên Sheet (VD: 1639, 2068) trên Google Sheet!");
+  }
+  
+  const values = range.getDisplayValues();
+  const sheetNames = [];
+  
+  values.forEach(row => {
+    row.forEach(val => {
+      const cleanName = (val || "").toString().trim();
+      if (cleanName !== "" && ss.getSheetByName(cleanName)) {
+        sheetNames.push(cleanName);
+      }
+    });
+  });
+  
+  if (sheetNames.length === 0) {
+    throw new Error("Không tìm thấy tên Sheet hợp lệ nào trong vùng ô bạn đang bôi đen! Hãy kiểm tra lại tên Sheet.");
+  }
+  
+  return sheetNames;
+}
+
+// --- 2. ĐỌC METADATA DẢI N:O CỦA MỘT SHEET ---
 function getSheetMetadata(sheet) {
+  if (!sheet) {
+    sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  }
+  if (!sheet) return {};
+
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return {};
   
@@ -18,9 +53,11 @@ function getSheetMetadata(sheet) {
   return meta;
 }
 
-function buildEmailData() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getActiveSheet();
+// --- 3. DỰNG DỮ LIỆU EMAIL TỪ SHEET CHỈ ĐỊNH ---
+function buildEmailDataForSheet(sheet) {
+  if (!sheet) {
+    throw new Error("Sheet không tồn tại hoặc bị undefined!");
+  }
 
   const meta = getSheetMetadata(sheet);
 
@@ -31,36 +68,26 @@ function buildEmailData() {
   const invId = meta['inv_id'] || "";
 
   if (!recipientEmail || !/\S+@\S+\.\S+/.test(recipientEmail)) {
-    throw new Error("Invalid or missing client_email in N:O range.");
+    throw new Error(`Sheet "${sheet.getName()}": Thiếu hoặc sai định dạng client_email ở dải N:O.`);
   }
 
   const timeZone = Session.getScriptTimeZone();
-  const timeString = Utilities.formatDate(new Date(), timeZone, "HH:mm");
+  const timeString = Utilities.formatDate(new Date(), timeZone, "yyyy-MM-dd HH:mm");
+  const timeShort = Utilities.formatDate(new Date(), timeZone, "HH:mm");
   const cleanInvoiceRef = invId.replace(/:/g, "").trim();
-  const subject = `PSVN ${cleanInvoiceRef} [${timeString}]`;
+  const subject = `PSVN ${cleanInvoiceRef} [${timeShort}]`;
 
   const htmlTemplate = HtmlService.createTemplateFromFile('emailTemplate');
   htmlTemplate.meta = meta;
   htmlTemplate.timeString = timeString;
   const htmlContent = htmlTemplate.evaluate().getContent();
 
-  return {
-    meta,
-    recipientEmail,
-    recipientName,
-    ccEmail,
-    invPdfName,
-    cleanInvoiceRef,
-    subject,
-    htmlContent
-  };
+  return { meta, recipientEmail, recipientName, ccEmail, invPdfName, cleanInvoiceRef, subject, htmlContent };
 }
 
-function sendInv() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getActiveSheet();
-  
-  const emailData = buildEmailData();
+// --- 4. XỬ LÝ GỬI EMAIL CHO 1 SHEET CHỈ ĐỊNH ---
+function processSingleSheetSend(ss, sheet) {
+  const emailData = buildEmailDataForSheet(sheet);
 
   const startColIndex = 2; // B
   const endColIndex = 12;  // L
@@ -90,7 +117,7 @@ function sendInv() {
   }
 
   if (lastDataRow < firstDataRow) {
-    throw new Error("No data found in columns B:L.");
+    throw new Error(`Không tìm thấy dữ liệu hóa đơn (cột B:L) trên Sheet: ${sheet.getName()}`);
   }
 
   const colStart = String.fromCharCode(64 + startColIndex);
@@ -106,9 +133,8 @@ function sendInv() {
   }
   sheet.setColumnWidth(noteColIndex, Math.min(350, Math.max(150, maxLength * 6.5)));
 
-  sheet.hideColumns(14, 2);
+  sheet.hideColumns(14, 2); // Ẩn N:O khi xuất PDF
 
-  // === EXPORT INVOICE PDF (FILE 1) ===
   const url = `https://docs.google.com/spreadsheets/d/${ss.getId()}/export?`;
   const params = {
     exportFormat: 'pdf', format: 'pdf', size: 'letter', portrait: true,
@@ -124,7 +150,6 @@ function sendInv() {
   sheet.showColumns(14, 2);
   sheet.setColumnWidth(noteColIndex, originalWidth);
 
-  // === CHUẨN BỊ ATTACHMENTS (TẠO LINK DOWNLOAD TRỰC TIẾP TỪ GOOGLE DRIVE) ===
   const attachments = [invoicePdfBlob];
   const payGateLink = emailData.meta['pay_gate_link'];
 
@@ -135,7 +160,6 @@ function sendInv() {
       if (driveMatch && driveMatch[1]) {
         downloadUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
       }
-
       const payGatePdfBlob = UrlFetchApp.fetch(downloadUrl).getBlob().setName("Payment_Guide.pdf");
       attachments.push(payGatePdfBlob);
     } catch (err) {
@@ -143,7 +167,6 @@ function sendInv() {
     }
   }
 
-  // === GỬI EMAIL THỰC TẾ ===
   GmailApp.sendEmail(emailData.recipientEmail, emailData.subject, '', {
     htmlBody: emailData.htmlContent,
     cc: emailData.ccEmail,
@@ -151,11 +174,22 @@ function sendInv() {
     name: "PSVN Team"
   });
 
-  Logger.log(`📧 Email sent successfully to ${emailData.recipientEmail} with ${attachments.length} PDFs.`);
+  Logger.log(`📧 Gửi thành công cho Sheet ${sheet.getName()} tới ${emailData.recipientEmail}`);
 }
 
-function openEmailPreviewModal() {
-  const emailData = buildEmailData();
+// --- 5. HÀM MỞ PREVIEW TỪ VÙNG BÔI ĐEN ---
+function openPreviewFromSelection() {
+  const selectedSheetNames = getSelectedSheetNames();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  const firstSheetName = selectedSheetNames[0];
+  const firstSheet = ss.getSheetByName(firstSheetName);
+
+  if (!firstSheet) {
+    throw new Error(`Không tìm thấy Sheet tên: "${firstSheetName}"`);
+  }
+
+  const emailData = buildEmailDataForSheet(firstSheet);
   const base64Html = Utilities.base64Encode(emailData.htmlContent, Utilities.Charset.UTF_8);
 
   const dialogTemplate = HtmlService.createTemplateFromFile('previewDialog');
@@ -163,18 +197,72 @@ function openEmailPreviewModal() {
   dialogTemplate.ccEmail = emailData.ccEmail;
   dialogTemplate.subject = emailData.subject;
   dialogTemplate.base64Html = base64Html;
+  dialogTemplate.totalSheets = selectedSheetNames.length;
+  dialogTemplate.sheetNamesJson = JSON.stringify(selectedSheetNames);
 
   const htmlOutput = dialogTemplate.evaluate()
     .setWidth(680)
     .setHeight(580);
 
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, '📧 Email Preview - PSVN Control Center');
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, `📧 Preview (Sheet: ${firstSheetName}) - PSVN Control Center`);
 }
 
-function executeActualSend() {
-  sendInv();
+// Fallback tương thích cũ cho Sidebar
+function openEmailPreviewModal() {
+  openPreviewFromSelection();
+}
+
+// --- 6. HÀM GỬI EMAIL TỪ VÙNG BÔI ĐEN ---
+function sendBatchFromSelection() {
+  const selectedSheetNames = getSelectedSheetNames();
+  return sendBatchBySheetNames(selectedSheetNames);
+}
+
+function sendBatchBySheetNames(sheetNamesArray) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let successCount = 0;
+  let errorCount = 0;
+
+  sheetNamesArray.forEach((sheetName, index) => {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      Logger.log(`⚠️ Bỏ qua, không tìm thấy Sheet: ${sheetName}`);
+      return;
+    }
+
+    try {
+      processSingleSheetSend(ss, sheet);
+      successCount++;
+      if (index < sheetNamesArray.length - 1) {
+        Utilities.sleep(2500); // Hoãn 2.5s
+      }
+    } catch (err) {
+      errorCount++;
+      Logger.log(`❌ Lỗi tại Sheet ${sheetName}: ${err.message}`);
+    }
+  });
+
+  return `Đã gửi thành công ${successCount}/${sheetNamesArray.length} email! (Lỗi: ${errorCount})`;
+}
+
+function executeActualSendFromPreview(sheetNamesJson) {
+  const sheetNamesArray = JSON.parse(sheetNamesJson);
+  return sendBatchBySheetNames(sheetNamesArray);
 }
 
 function sendInvDirectly() {
-  sendInv();
+  return sendBatchFromSelection();
+}
+
+// --- 7. HÀM GỬI CHO ACTIVE SHEET ---
+function sendInv() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const currentSheet = ss.getActiveSheet();
+  
+  const meta = getSheetMetadata(currentSheet);
+  if (!meta['client_email']) {
+    throw new Error(`Sheet hiện tại "${currentSheet.getName()}" không có client_email. Vui lòng bôi đen chọn các ô tên Sheet cần gửi (VD: 1639, 2068) trên bảng tính!`);
+  }
+  
+  processSingleSheetSend(ss, currentSheet);
 }

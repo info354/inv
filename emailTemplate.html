@@ -5,175 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invoice Notification - PSVN</title>
   <style>
-    /* === RESET & BASE STYLES === */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body, p, h1, h2, h3, ul, td {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SFMono-Regular", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    body {
-      background-color: #F5F5F7;
-      color: #1D1D1F;
-      -webkit-font-smoothing: antialiased;
-      width: 100% !important;
-      line-height: 1.5;
-      padding: 30px 10px;
-    }
-    .wrapper {
-      width: 100%;
-      max-width: 580px;
-      margin: 0 auto;
-    }
-
-    /* === APPLE / iOS WIDGET CONTAINER === */
-    .card-widget {
-      background-color: #FFFFFF;
-      border-radius: 16px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-      overflow: hidden;
-    }
-    .top-accent-bar {
-      height: 3px;
-      background-color: #FF6B00; /* Brand Accent Line */
-      width: 100%;
-    }
-    .card-content {
-      padding: 32px;
-    }
-
-    /* === BRANDING & BADGE === */
-    .brand-logo {
-      height: 34px;
-      width: auto;
-      display: block;
-    }
-    .badge-status {
-      display: inline-block;
-      padding: 4px 12px;
-      background-color: rgba(255, 107, 0, 0.08);
-      border: 1px solid rgba(255, 107, 0, 0.25);
-      border-radius: 20px;
-      color: #FF6B00;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    /* === WIDGET CARD COMMON === */
-    .widget-box {
-      background-color: #F5F5F7;
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin: 16px 0;
-    }
-    .widget-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: #86868B;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* === INVOICE SUMMARY WIDGET === */
-    .info-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .info-label {
-      font-size: 11px;
-      color: #86868B;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding-bottom: 4px;
-    }
-    .info-value-main {
-      font-size: 14px;
-      color: #1D1D1F;
-      font-weight: 600;
-    }
-    .due-highlight {
-      font-size: 22px;
-      font-weight: 700;
-      color: #FF6B00;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    }
-    .time-muted {
-      font-size: 11px;
-      color: #A1A1A6; /* Làm mờ Issued Time */
-      font-weight: 400;
-    }
-    .mono-font {
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-    }
-
-    /* === CLIENT DETAILS WIDGET === */
-    .client-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .client-row td {
-      padding: 3px 0;
-      font-size: 13px;
-      vertical-align: top;
-    }
-    .client-label {
-      color: #86868B;
-      width: 110px;
-      font-size: 12px;
-    }
-    .client-val {
-      color: #1D1D1F;
-      font-weight: 600;
-    }
-
-    /* === PAYMENT DETAILS WIDGET CARD === */
-    .payment-widget {
-      background: #FAFAFC;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-left: 3.5px solid #FF6B00;
-      border-radius: 12px;
-      padding: 16px 18px;
-      margin: 16px 0;
-    }
-    .pay-detail-text {
-      font-size: 13px;
-      color: #424245;
-      line-height: 1.6;
-      white-space: pre-line;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    }
-
-    .divider {
-      height: 1px;
-      background-color: rgba(0, 0, 0, 0.06);
-      margin: 24px 0;
-    }
-
-    /* === BRAND FOOTER === */
-    .footer {
-      font-size: 12px;
-      color: #86868B;
-      line-height: 1.6;
-    }
-    .footer strong {
-      color: #1D1D1F;
-    }
-    .footer a {
-      color: #FF6B00;
-      text-decoration: none;
-      font-weight: 500;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body, p, h1, h2, h3, ul, td { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SFMono-Regular", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #F5F5F7; color: #1D1D1F; -webkit-font-smoothing: antialiased; width: 100% !important; line-height: 1.5; padding: 30px 10px; }
+    .wrapper { width: 100%; max-width: 580px; margin: 0 auto; }
+    .card-widget { background-color: #FFFFFF; border-radius: 16px; border: 1px solid rgba(0, 0, 0, 0.08); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); overflow: hidden; }
+    .top-accent-bar { height: 3px; background-color: #FF6B00; width: 100%; }
+    .card-content { padding: 32px; }
+    .brand-logo { height: 34px; width: auto; display: block; }
+    .badge-status { display: inline-block; padding: 4px 12px; background-color: rgba(255, 107, 0, 0.08); border: 1px solid rgba(255, 107, 0, 0.25); border-radius: 20px; color: #FF6B00; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+    .widget-box { background-color: #F5F5F7; border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
+    .widget-title { font-size: 11px; font-weight: 700; color: #86868B; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-label { font-size: 11px; color: #86868B; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 4px; }
+    .info-value-main { font-size: 14px; color: #1D1D1F; font-weight: 600; }
+    .due-highlight { font-size: 22px; font-weight: 700; color: #FF6B00; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+    .time-muted { font-size: 11px; color: #A1A1A6; font-weight: 400; }
+    .mono-font { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace; }
+    .client-table { width: 100%; border-collapse: collapse; }
+    .client-row td { padding: 3px 0; font-size: 13px; vertical-align: top; }
+    .client-label { color: #86868B; width: 130px; font-size: 12px; }
+    .client-val { color: #1D1D1F; font-weight: 600; }
+    .payment-widget { background: #FAFAFC; border: 1px solid rgba(0, 0, 0, 0.08); border-left: 3.5px solid #FF6B00; border-radius: 12px; padding: 16px 18px; margin: 16px 0; }
+    .pay-detail-text { font-size: 13px; color: #424245; line-height: 1.6; white-space: pre-line; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+    .divider { height: 1px; background-color: rgba(0, 0, 0, 0.06); margin: 24px 0; }
+    .footer { font-size: 12px; color: #86868B; line-height: 1.6; }
+    .footer strong { color: #1D1D1F; }
+    .footer a { color: #FF6B00; text-decoration: none; font-weight: 500; }
   </style>
 </head>
 <body>
@@ -202,7 +60,7 @@
           Your invoice for photo editing services is attached to this email along with the payment guide. Please review the summary details below:
         </p>
 
-        <!-- SUMMARY WIDGET: DUE & CURRENCY HIGHLIGHT -->
+        <!-- SUMMARY WIDGET -->
         <div class="widget-box">
           <table class="info-table">
             <tr>
@@ -226,7 +84,7 @@
           </table>
         </div>
 
-        <!-- SECTION CLIENT DETAILS WIDGET -->
+        <!-- BILLED TO (CLIENT DETAILS) -->
         <div class="widget-box">
           <div class="widget-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#86868B" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -242,13 +100,13 @@
             <? if (meta['client_address']) { ?>
               <tr class="client-row"><td class="client-label">Address:</td><td class="client-val"><?= meta['client_address'] ?></td></tr>
             <? } ?>
-            <? if (meta['client_business_id']) { ?>
+            <? if (meta['client_business_id'] && meta['client_business_id'].trim() !== '') { ?>
               <tr class="client-row"><td class="client-label">Tax / Business ID:</td><td class="client-val mono-font"><?= meta['client_business_id'] ?></td></tr>
             <? } ?>
           </table>
         </div>
 
-        <!-- PAYMENT DETAILS WIDGET (SỬ DỤNG INLINE SVG THAY CHO EMOJI BỊ LỖI KÝ TỰ) -->
+        <!-- PAYMENT DETAILS -->
         <? if (meta['paygate_details'] && meta['paygate_details'].trim() !== '') { ?>
           <div class="payment-widget">
             <div class="widget-title" style="color: #1D1D1F; margin-bottom: 8px;">
@@ -266,7 +124,7 @@
           <strong>VIET NAM PHOTO EDITING SERVICES JSC</strong><br>
           <em>Professional Post-Production & Image Editing Services</em><br>
           Website: <a href="https://ps-vn.com" target="_blank">ps-vn.com</a> | Email: <a href="mailto:info@ps-vn.com">info@ps-vn.com</a><br>
-          Contact: +84 977 434 823 (Henry) • +84 334 026 880
+          Contact: +84 977 434 823 (Henry) • +84 334 026 880 (CSO Team)
         </div>
 
       </div>
