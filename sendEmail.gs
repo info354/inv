@@ -1,52 +1,78 @@
-function sendInv() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var abc = '';
-  // update 2
+/**
+ * THIẾT KẾ HTML CSS V3 - GOOGLE APPS SCRIPT
+ */
 
-  // --- READ METADATA ---
-  const invoiceRef = sheet.getRange("L6").getDisplayValue(); // e.g., "Invoice No : inst-1860-260721"
-  const recipientEmail = (sheet.getRange("P9").getValue() || "").toString().trim();
-  const ccEmail = (sheet.getRange("P18").getValue() || "").toString().trim();
-  const recipientName = (sheet.getRange("P7").getDisplayValue() || "").trim() || "Valued Customer";
-  const invName = (sheet.getRange("P8").getValue() || "").toString().trim() || "invoice";
-  const invName2 = (sheet.getRange("P8").getValue() || "").toString().trim() || "invoice";
+function getSheetMetadata(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return {};
+  
+  const rangeValues = sheet.getRange(`N2:O${lastRow}`).getDisplayValues();
+  const meta = {};
+  
+  rangeValues.forEach(([key, val]) => {
+    if (key && key.trim() !== '') {
+      meta[key.trim().toLowerCase()] = (val || "").toString().trim();
+    }
+  });
+  
+  return meta;
+}
+
+function buildEmailData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+
+  const meta = getSheetMetadata(sheet);
+
+  const recipientEmail = meta['client_email'] || meta['email_cc'];
+  const ccEmail = meta['email_cc'] || "";
+  const recipientName = meta['client_name'] || "Valued Customer";
+  const invPdfName = meta['inv_pdf_name'] || "invoice";
+  const invId = meta['inv_id'] || "";
 
   if (!recipientEmail || !/\S+@\S+\.\S+/.test(recipientEmail)) {
-    throw new Error("Invalid or missing email in P9.");
+    throw new Error("Invalid or missing client_email in N:O range.");
   }
 
-    // --- ICT TIME (FIXED: use script's time zone reliably) ---
-  const timeZone = Session.getScriptTimeZone(); // e.g., "Asia/Ho_Chi_Minh"
-  const now = new Date();
-  const timeString = Utilities.formatDate(now, timeZone, "HH:mm"); // 24h format, e.g., "14:34"
-
-  // Clean invoice ref for subject
-  let cleanInvoiceRef = invoiceRef.replace(/:/g, "").trim();
+  const timeZone = Session.getScriptTimeZone();
+  const timeString = Utilities.formatDate(new Date(), timeZone, "HH:mm");
+  const cleanInvoiceRef = invId.replace(/:/g, "").trim();
   const subject = `PSVN ${cleanInvoiceRef} [${timeString}]`;
 
-  // // --- ICT TIME ---
-  // const now = new Date();
-  // const ictTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-  // const timeString = `${String(ictTime.getHours()).padStart(2,'0')}:${String(ictTime.getMinutes()).padStart(2,'0')}`;
-  // const cleanInvoiceRef = invoiceRef.replace(/:/g, "").trim();
-  // const subject = `PSVN ${cleanInvoiceRef} [${timeString}]`;
+  const htmlTemplate = HtmlService.createTemplateFromFile('emailTemplate');
+  htmlTemplate.meta = meta;
+  htmlTemplate.timeString = timeString;
+  const htmlContent = htmlTemplate.evaluate().getContent();
 
-  // === 🎯 CORE: DEFINE PRINT RANGE = COLUMNS B to L (index 2 to 12) ===
+  return {
+    meta,
+    recipientEmail,
+    recipientName,
+    ccEmail,
+    invPdfName,
+    cleanInvoiceRef,
+    subject,
+    htmlContent
+  };
+}
+
+function sendInv() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+  
+  const emailData = buildEmailData();
+
   const startColIndex = 2; // B
   const endColIndex = 12;  // L
-  const startRow = 1;      // assuming row 1 is header (adjust if needed, e.g., 2)
+  const startRow = 1;
 
-  // Helper: check if a row has ANY non-empty cell in columns B:L
-  function rowHasContent(sheet, rowIndex, startCol, endCol) {
-    const values = sheet.getRange(rowIndex, startCol, 1, endCol - startCol + 1).getValues()[0];
+  function rowHasContent(sh, rowIndex, startCol, endCol) {
+    const values = sh.getRange(rowIndex, startCol, 1, endCol - startCol + 1).getValues()[0];
     return values.some(val => val !== null && val !== "" && val.toString().trim() !== "");
   }
 
-  // Find first data row (skip header if row 1 is header and empty in B:L)
   let firstDataRow = startRow;
-  if (rowHasContent(sheet, startRow, startColIndex, endColIndex)) {
-    firstDataRow = startRow;
-  } else {
+  if (!rowHasContent(sheet, startRow, startColIndex, endColIndex)) {
     for (let r = startRow + 1; r <= sheet.getMaxRows(); r++) {
       if (rowHasContent(sheet, r, startColIndex, endColIndex)) {
         firstDataRow = r;
@@ -55,7 +81,6 @@ function sendInv() {
     }
   }
 
-  // Find last data row (scan from bottom up)
   let lastDataRow = firstDataRow;
   for (let r = sheet.getMaxRows(); r >= firstDataRow; r--) {
     if (rowHasContent(sheet, r, startColIndex, endColIndex)) {
@@ -68,72 +93,88 @@ function sendInv() {
     throw new Error("No data found in columns B:L.");
   }
 
-  // 👉 Build exact print range: B{firstDataRow}:L{lastDataRow}
-  const colStart = String.fromCharCode(64 + startColIndex); // B
-  const colEnd   = String.fromCharCode(64 + endColIndex);   // L
+  const colStart = String.fromCharCode(64 + startColIndex);
+  const colEnd   = String.fromCharCode(64 + endColIndex);
   const rangeStr = `${colStart}${firstDataRow}:${colEnd}${lastDataRow}`;
 
-  Logger.log(`✅ Printing range: ${rangeStr} | Rows: ${firstDataRow} → ${lastDataRow}`);
-
-  // --- OPTIONAL: widen column L (NOTE) safely ---
-  const noteColIndex = endColIndex; // L
+  const noteColIndex = endColIndex;
   const originalWidth = sheet.getColumnWidth(noteColIndex);
   const noteVals = sheet.getRange(firstDataRow, noteColIndex, lastDataRow - firstDataRow + 1, 1).getValues();
   let maxLength = 0;
   for (let i = 0; i < noteVals.length; i++) {
-    const txt = (noteVals[i][0] || "").toString();
-    maxLength = Math.max(maxLength, txt.length);
+    maxLength = Math.max(maxLength, (noteVals[i][0] || "").toString().length);
   }
   sheet.setColumnWidth(noteColIndex, Math.min(350, Math.max(150, maxLength * 6.5)));
 
-  // --- EXPORT PDF ---
-  const url = `https://docs.google.com/spreadsheets/d/${SpreadsheetApp.getActiveSpreadsheet().getId()}/export?`;
+  sheet.hideColumns(14, 2);
+
+  // === EXPORT INVOICE PDF (FILE 1) ===
+  const url = `https://docs.google.com/spreadsheets/d/${ss.getId()}/export?`;
   const params = {
-    exportFormat: 'pdf',
-    format: 'pdf',
-    size: 'letter',
-    portrait: true,
-    fitw: true,
-    gridlines: false,
-    printtitle: false,
-    sheetnames: false,
-    pagenum: 'UNDEFINED',
-    attachment: true,
-    gid: sheet.getSheetId(),
-    range: rangeStr
+    exportFormat: 'pdf', format: 'pdf', size: 'letter', portrait: true,
+    fitw: true, gridlines: false, printtitle: false, sheetnames: false,
+    pagenum: 'UNDEFINED', attachment: true, gid: sheet.getSheetId(), range: rangeStr
   };
 
-  const qs = Object.entries(params)
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join('&');
-
-  const pdfBlob = UrlFetchApp.fetch(url + qs, {
+  const qs = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const invoicePdfBlob = UrlFetchApp.fetch(url + qs, {
     headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }
-  }).getBlob().setName(`${invName}.pdf`);
+  }).getBlob().setName(`${emailData.invPdfName}.pdf`);
 
-  // --- EMAIL ---
-  const htmlBody = `
-    <div style="font-family: Arial; max-width:600px; margin:0 auto; padding:20px;">
-      <div style="border:1px solid #ddd; background:#f8f8f8; padding:20px; border-radius:6px;">
-        <p>Dear ${recipientName},</p>
-        <p>We have attached the invoice for your review.</p>
-        <p style="margin-top:20px; font-size:14px; color:#666; border-top:1px solid #ddd; padding-top:15px;">
-          <a href="https://forms.gle/1BdEaBRPT3AowyZU7" style="color:#FF6B35; font-weight:bold;">Change billing details</a>
-        </p>
-      </div>
-      <p style="margin-top:20px; font-weight:bold;">Best regards,<br>The PSVN Team</p>
-    </div>
-  `;
+  sheet.showColumns(14, 2);
+  sheet.setColumnWidth(noteColIndex, originalWidth);
 
-  GmailApp.sendEmail(recipientEmail, subject, '', {
-    htmlBody,
-    cc: ccEmail,
-    attachments: [pdfBlob],
+  // === CHUẨN BỊ ATTACHMENTS (TẠO LINK DOWNLOAD TRỰC TIẾP TỪ GOOGLE DRIVE) ===
+  const attachments = [invoicePdfBlob];
+  const payGateLink = emailData.meta['pay_gate_link'];
+
+  if (payGateLink && payGateLink.startsWith("http")) {
+    try {
+      let downloadUrl = payGateLink;
+      const driveMatch = payGateLink.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (driveMatch && driveMatch[1]) {
+        downloadUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+      }
+
+      const payGatePdfBlob = UrlFetchApp.fetch(downloadUrl).getBlob().setName("Payment_Guide.pdf");
+      attachments.push(payGatePdfBlob);
+    } catch (err) {
+      Logger.log("⚠️ Không thể tải file PDF từ pay_gate_link: " + err.message);
+    }
+  }
+
+  // === GỬI EMAIL THỰC TẾ ===
+  GmailApp.sendEmail(emailData.recipientEmail, emailData.subject, '', {
+    htmlBody: emailData.htmlContent,
+    cc: emailData.ccEmail,
+    attachments: attachments,
     name: "PSVN Team"
   });
 
-  // Cleanup
-  sheet.setColumnWidth(noteColIndex, originalWidth);
-  Logger.log(`📧 Email sent with PDF: ${invName}.pdf | Range: ${rangeStr}`);
+  Logger.log(`📧 Email sent successfully to ${emailData.recipientEmail} with ${attachments.length} PDFs.`);
 }
 
+function openEmailPreviewModal() {
+  const emailData = buildEmailData();
+  const base64Html = Utilities.base64Encode(emailData.htmlContent, Utilities.Charset.UTF_8);
+
+  const dialogTemplate = HtmlService.createTemplateFromFile('previewDialog');
+  dialogTemplate.recipientEmail = emailData.recipientEmail;
+  dialogTemplate.ccEmail = emailData.ccEmail;
+  dialogTemplate.subject = emailData.subject;
+  dialogTemplate.base64Html = base64Html;
+
+  const htmlOutput = dialogTemplate.evaluate()
+    .setWidth(680)
+    .setHeight(580);
+
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, '📧 Email Preview - PSVN Control Center');
+}
+
+function executeActualSend() {
+  sendInv();
+}
+
+function sendInvDirectly() {
+  sendInv();
+}

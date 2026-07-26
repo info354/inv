@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSVN Control Center</title>
+  <style>
+    /* === RESET & BASE STYLES === */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #F5F5F7;
+      color: #1D1D1F;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      padding: 16px;
+      line-height: 1.4;
+    }
+
+    /* === HEADER BRANDING === */
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .brand-logo {
+      height: 24px;
+      width: auto;
+    }
+    .brand-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #86868B;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* === WIDGET CARD CONTAINER === */
+    .widget-card {
+      background: #FFFFFF;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #86868B;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    /* === TOGGLE SWITCH (APPLE STYLE) === */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 6px 0;
+    }
+    .toggle-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1D1D1F;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #E5E5EA;
+      transition: .25s ease;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .25s ease;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    input:checked + .slider {
+      background-color: #FF6B00; /* Apple Orange Accent */
+    }
+    input:checked + .slider:before {
+      transform: translateX(18px);
+    }
+
+    /* === BUTTONS & SELECTS === */
+    .btn {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background-color: #FFFFFF;
+      color: #1D1D1F;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn:last-child {
+      margin-bottom: 0;
+    }
+    .btn:hover {
+      background-color: #F2F2F7;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-orange {
+      background-color: #FF6B00;
+      color: #FFFFFF;
+      border: none;
+      box-shadow: 0 2px 6px rgba(255, 107, 0, 0.25);
+    }
+    .btn-orange:hover {
+      background-color: #E56000;
+    }
+    .btn-dark {
+      background-color: #1D1D1F;
+      color: #FFFFFF;
+      border: none;
+    }
+    .btn-dark:hover {
+      background-color: #333336;
+    }
+
+    .select-box {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      background-color: #FFFFFF;
+      color: #1D1D1F;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      outline: none;
+    }
+    .select-box:focus {
+      border-color: #FF6B00;
+    }
+
+    .divider {
+      height: 1px;
+      background-color: rgba(0, 0, 0, 0.08);
+      margin: 16px 0;
+    }
+
+    #status-toast {
+      font-size: 11px;
+      color: #86868B;
+      text-align: center;
+      margin-top: 10px;
+      min-height: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BRAND HEADER -->
+  <div class="brand-header">
+    <img src="http://ps-vn.com/wp-content/uploads/2026/07/logo-for-web-1.svg" alt="PSVN" class="brand-logo">
+    <span class="brand-title">Control Center</span>
+  </div>
+
+  <!-- GROUP 1: INVOICE OPERATIONS -->
+  <div class="widget-card">
+    <span class="card-label">⚡ Invoice Operations</span>
+    
+    <!-- TOGGLE PREVIEW OPTION -->
+    <div class="toggle-row">
+      <span class="toggle-label">Enable Email Preview</span>
+      <label class="switch">
+        <input type="checkbox" id="previewToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Load Data Button -->
+    <button class="btn" onclick="runScript('load')">
+      🔄 Load Data
+    </button>
+    
+    <!-- Send Invoice Email Button -->
+    <button class="btn btn-orange" onclick="handleSendInvoice()">
+      📧 Send Invoice Email
+    </button>
+  </div>
+
+  <!-- BREAK LINE DIVIDER -->
+  <div class="divider"></div>
+
+  <!-- GROUP 2: SHEET MANAGEMENT -->
+  <div class="widget-card">
+    <span class="card-label">📂 Sheet Management</span>
+
+    <button class="btn btn-dark" onclick="runScript('sysTab')">
+      📌 Move (-) Tabs to Top
+    </button>
+
+    <div style="margin-top: 12px;">
+      <label class="card-label" style="font-size: 10px; margin-bottom: 4px;">Bring Selected Sheet Here:</label>
+      <select id="selectMoveHere" class="select-box" onchange="handleMoveHere(this.value)">
+        <option value="">-- Select Sheet --</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="card-label" style="font-size: 10px; margin-bottom: 4px;">Jump to Sheet:</label>
+      <select id="selectGoTo" class="select-box" onchange="handleGoTo(this.value)">
+        <option value="">-- Select Sheet --</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- STATUS TOAST -->
+  <div id="status-toast">Ready</div>
+
+  <script>
+    window.onload = function() {
+      google.script.run
+        .withSuccessHandler(populateSheets)
+        .getAllSheetNames();
+    };
+
+    function populateSheets(sheetNames) {
+      const moveSelect = document.getElementById('selectMoveHere');
+      const goToSelect = document.getElementById('selectGoTo');
+
+      moveSelect.innerHTML = '<option value="">-- Select Sheet --</option>';
+      goToSelect.innerHTML = '<option value="">-- Select Sheet --</option>';
+
+      sheetNames.forEach(name => {
+        moveSelect.innerHTML += `<option value="${name}">${name}</option>`;
+        goToSelect.innerHTML += `<option value="${name}">${name}</option>`;
+      });
+    }
+
+    function showStatus(msg) {
+      document.getElementById('status-toast').innerText = msg;
+    }
+
+    // Xử lý gửi email linh hoạt có/không qua Preview Dialog
+    function handleSendInvoice() {
+      const isPreview = document.getElementById('previewToggle').checked;
+      showStatus('Processing...');
+      
+      if (isPreview) {
+        // Nếu bật Preview: Mở Dialog xem trước
+        google.script.run
+          .withSuccessHandler(() => showStatus('Preview Opened!'))
+          .withFailureHandler((err) => showStatus('Error: ' + err.message))
+          .openEmailPreviewModal();
+      } else {
+        // Nếu tắt Preview: Gửi trực tiếp ngay
+        google.script.run
+          .withSuccessHandler(() => showStatus('Sent successfully!'))
+          .withFailureHandler((err) => showStatus('Error: ' + err.message))
+          .sendInvDirectly();
+      }
+    }
+
+    function runScript(funcName) {
+      showStatus('Executing ' + funcName + '...');
+      google.script.run
+        .withSuccessHandler(() => showStatus('Completed!'))
+        .withFailureHandler((err) => showStatus('Error: ' + err.message))
+        [funcName]();
+    }
+
+    function handleMoveHere(sheetName) {
+      if (!sheetName) return;
+      showStatus('Moving ' + sheetName + '...');
+      google.script.run
+        .withSuccessHandler(() => {
+          showStatus('Moved successfully!');
+          document.getElementById('selectMoveHere').value = '';
+        })
+        .withFailureHandler((err) => showStatus('Error: ' + err.message))
+        .moveThisSheetNameHere(sheetName);
+    }
+
+    function handleGoTo(sheetName) {
+      if (!sheetName) return;
+      showStatus('Navigating to ' + sheetName + '...');
+      google.script.run
+        .withSuccessHandler(() => {
+          showStatus('Navigated!');
+          document.getElementById('selectGoTo').value = '';
+        })
+        .withFailureHandler((err) => showStatus('Error: ' + err.message))
+        .goToSheetByName(sheetName);
+    }
+  </script>
+</body>
+</html>

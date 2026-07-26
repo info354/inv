@@ -34,7 +34,7 @@ function load() {
     Logger.log("❌ Không có tên sheet nào trong vùng chọn.");
     return;
   }
-  const statsSheet = ss.getSheetByName("Stats");
+  const statsSheet = ss.getSheetByName("-Stats");
   if (!statsSheet) {
     Logger.log('❌ Sheet "Stats" không tồn tại!');
     return;

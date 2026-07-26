@@ -1322,3 +1322,44 @@ var d = r.getValues();
 var r2 = s.getRange(1, 1, r.getNumRows(), s.getLastColumn());
 var d2 = r2.getValues();
 
+
+
+// --- 1. TỰ ĐỘNG TẠO MENU TRÊN GOOGLE SHEETS ---
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('⚡ PSVN Tools')
+    .addItem('Open Control Center Sidebar', 'showSidebar')
+    .addToUi();
+}
+
+// --- 2. HÀM MỞ SIDEBAR CONTROL CENTER ---
+function showSidebar() {
+  const html = HtmlService.createTemplateFromFile('sidebar')
+    .evaluate()
+    .setTitle('PSVN Control Center')
+    .setWidth(300);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
+// --- 3. HÀM LẤY DANH SÁCH TÊN SHEETS CHO SIDEBAR DROPDOWN ---
+function getAllSheetNames() {
+  return SpreadsheetApp.getActiveSpreadsheet()
+    .getSheets()
+    .map(sh => sh.getName());
+}
+
+// --- 4. HÀM SẮP XẾP TABS BẮT ĐẦU BẰNG DẤU (-) VỀ HÀNG ĐẦU ---
+function sysTab() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  let targetIndex = 1;
+
+  sheets.forEach(sheet => {
+    const name = sheet.getName();
+    if (name.startsWith('-')) {
+      ss.setActiveSheet(sheet);
+      ss.moveActiveSheet(targetIndex);
+      targetIndex++;
+    }
+  });
+}
