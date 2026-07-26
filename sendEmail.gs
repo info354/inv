@@ -1,5 +1,7 @@
 function sendInv() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var abc = '';
+  // update 2
 
   // --- READ METADATA ---
   const invoiceRef = sheet.getRange("L6").getDisplayValue(); // e.g., "Invoice No : inst-1860-260721"
