@@ -1,6 +1,6 @@
 
 
-function showSidebar_pending() {
+function showSidebar() {
   SM.showSidebar();
 }
 

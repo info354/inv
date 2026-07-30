@@ -219,10 +219,10 @@
               </td>
             </tr>
             <tr>
-              <td colspan="2" align="right" style="padding-top: 6px;">
-                <span class="time-muted">Issued at <?= timeString ?> (ICT)</span>
-              </td>
-            </tr>
+  <td colspan="2" align="right" style="padding-top: 6px;">
+    <span class="time-muted">Issued on <?= timeString ?> (ICT)</span>
+  </td>
+</tr>
           </table>
         </div>
 
@@ -248,26 +248,31 @@
           </table>
         </div>
 
-        <!-- PAYMENT DETAILS WIDGET (SỬ DỤNG INLINE SVG THAY CHO EMOJI BỊ LỖI KÝ TỰ) -->
-        <? if (meta['paygate_details'] && meta['paygate_details'].trim() !== '') { ?>
-          <div class="payment-widget">
-            <div class="widget-title" style="color: #1D1D1F; margin-bottom: 8px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6B00" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-              Payment Details
-            </div>
-            <div class="pay-detail-text"><?= meta['paygate_details'] ?></div>
-          </div>
-        <? } ?>
+        <!-- PAYMENT DETAILS WIDGET -->
+<? 
+  var payDetails = meta['paygate_details'] ? meta['paygate_details'].toString().trim() : '';
+  
+  // Kiểm tra: Không rỗng VÀ Không chứa ký tự lỗi công thức (bắt đầu bằng # hoặc chứa #N/A)
+  if (payDetails !== '' && !payDetails.startsWith('#') && !payDetails.includes('#N/A')) { 
+?>
+  <div class="payment-widget">
+    <div class="widget-title" style="color: #1D1D1F; margin-bottom: 8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6B00" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+      Payment Details
+    </div>
+    <div class="pay-detail-text"><?= payDetails ?></div>
+  </div>
+<? } ?>
 
         <div class="divider"></div>
 
         <!-- FOOTER BRANDING -->
-        <div class="footer">
-          <strong>VIET NAM PHOTO EDITING SERVICES JSC</strong><br>
-          <em>Professional Post-Production & Image Editing Services</em><br>
-          Website: <a href="https://ps-vn.com" target="_blank">ps-vn.com</a> | Email: <a href="mailto:info@ps-vn.com">info@ps-vn.com</a><br>
-          Contact: +84 977 434 823 (Henry) • +84 334 026 880
-        </div>
+<div class="footer">
+  <strong>VIET NAM PHOTO EDITING SERVICES JSC</strong><br>
+  <em>Professional Post-Production & Image Editing Services</em><br>
+  Website: <a href="https://ps-vn.com" target="_blank">ps-vn.com</a> | Email: <a href="mailto:info@ps-vn.com">info@ps-vn.com</a><br>
+  Contact: +84 977 434 823 (Henry) (Phone & WhatsApp) • +84 334 026 880 (WhatsApp)
+</div>
 
       </div>
     </div>
