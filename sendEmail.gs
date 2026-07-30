@@ -35,7 +35,7 @@ function buildEmailData() {
   }
 
   const timeZone = Session.getScriptTimeZone();
-  const timeString = Utilities.formatDate(new Date(), timeZone, "dd/MM/yyyy HH:mm");
+  const timeString = Utilities.formatDate(new Date(), timeZone, "MMM dd, yyyy HH:mm");
   const cleanInvoiceRef = invId.replace(/:/g, "").trim();
   const subject = `PSVN ${cleanInvoiceRef} [${timeString}]`;
 
