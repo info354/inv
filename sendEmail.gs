@@ -35,13 +35,21 @@ function buildEmailData() {
   }
 
   const timeZone = Session.getScriptTimeZone();
-  const timeString = Utilities.formatDate(new Date(), timeZone, "MMM dd, yyyy HH:mm");
+  
+  // 1. Dùng cho Subject: Chỉ hiển thị HH:mm (Ví dụ: 17:53)
+  const timeString = Utilities.formatDate(new Date(), timeZone, "HH:mm");
+  
+  // 2. Dùng cho Body Email: Hiển thị Tháng Ngày, Năm HH:mm (Ví dụ: Jul 30, 2026 17:53)
+  const issuedDate = Utilities.formatDate(new Date(), timeZone, "MMM dd, yyyy HH:mm");
+
   const cleanInvoiceRef = invId.replace(/:/g, "").trim();
+  // Subject giữ nguyên sự gọn gàng cũ: PSVN inst-2060-260730 [17:53]
   const subject = `PSVN ${cleanInvoiceRef} [${timeString}]`;
 
   const htmlTemplate = HtmlService.createTemplateFromFile('emailTemplate');
   htmlTemplate.meta = meta;
   htmlTemplate.timeString = timeString;
+  htmlTemplate.issuedDate = issuedDate; // Truyền thêm biến issuedDate sang template HTML
   const htmlContent = htmlTemplate.evaluate().getContent();
 
   return {
@@ -124,24 +132,8 @@ function sendInv() {
   sheet.showColumns(14, 2);
   sheet.setColumnWidth(noteColIndex, originalWidth);
 
-  // === CHUẨN BỊ ATTACHMENTS (TẠO LINK DOWNLOAD TRỰC TIẾP TỪ GOOGLE DRIVE) ===
+  // === CHUẨN BỊ ATTACHMENTS (CHỈ GỬI FILE INVOICE PDF) ===
   const attachments = [invoicePdfBlob];
-  const payGateLink = emailData.meta['pay_gate_link'];
-
-  if (payGateLink && payGateLink.startsWith("http")) {
-    try {
-      let downloadUrl = payGateLink;
-      const driveMatch = payGateLink.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (driveMatch && driveMatch[1]) {
-        downloadUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
-      }
-
-      const payGatePdfBlob = UrlFetchApp.fetch(downloadUrl).getBlob().setName("Payment_Guide.pdf");
-      attachments.push(payGatePdfBlob);
-    } catch (err) {
-      Logger.log("⚠️ Không thể tải file PDF từ pay_gate_link: " + err.message);
-    }
-  }
 
   // === GỬI EMAIL THỰC TẾ ===
   GmailApp.sendEmail(emailData.recipientEmail, emailData.subject, '', {

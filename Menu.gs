@@ -9,6 +9,7 @@ function menu() {
   menu
     .addItem('load', 'load')
     .addItem('sendInv', 'sendInv')
+    .addItem('export_pdf_selection', 'export_pdf_selection')
     .addSeparator()
     .addItem('goToSheetByName', 'goToSheetByName')
     .addItem('moveThisSheetNameHere', 'moveThisSheetNameHere')

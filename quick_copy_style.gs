@@ -2,7 +2,7 @@ function editQuick() {
 
   if(r < 12 || s.getRange(row,40).isBlank()){exit();}
   //Xác định url remote
-  var sheet = ss.getSheetByName('JW');
+  var sheet = ss.getSheetByName('-JW');
   var range = sheet.getRange('BC12:BE17');
   var data = range.getValues();
 
